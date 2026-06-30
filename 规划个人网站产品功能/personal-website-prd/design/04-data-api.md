@@ -1,6 +1,6 @@
 # 数据模型与 API 设计文档
 
-> 版本: v1.1
+> 版本: v1.2 (TinaCMS 版)
 > 项目: 涂奎个人网站
 > 用途: Trae 编程实现的数据层与接口输入
 
@@ -8,198 +8,215 @@
 
 ## 1. 设计原则
 
-- **无数据库**: 所有内容数据存储为 MDX 文件，通过 `fs` + `gray-matter` + `next-mdx-remote` 在构建时处理
+- **Git-based CMS**: 使用 TinaCMS 管理内容，提供可视化编辑界面，内容存储为 MDX 文件并纳入 Git 版本控制
+- **无数据库**: 内容不依赖外部数据库，全部存于 Git 仓库中的 `content/` 目录
 - **单一 API**: 全站仅需一个 API Route (`/api/contact`) 处理联系表单提交
-- **强类型**: 所有数据模型使用 TypeScript 接口定义，Zod 负责运行时验证
-- **静态生成**: 内容在构建时读取并生成静态页面，运行时无数据查询开销
+- **强类型**: TinaCMS 生成类型安全的查询客户端，所有数据模型在 Schema 中定义
+- **静态生成**: 内容在构建时通过 TinaCMS 客户端查询并生成静态页面
 
 ---
 
-## 2. MDX Content Schema
+## 2. TinaCMS Collection Schema
 
-### 2.1 项目内容 (Project)
+### 2.1 Schema 定义总览
 
-**文件位置**: `content/projects/*.mdx`
+**文件位置**: `tina/config.ts`
 
-**Frontmatter 定义**:
+```typescript
+import { defineConfig } from 'tinacms';
 
-| 字段 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| title | string | 是 | 项目名称 |
-| slug | string | 是 | URL 标识，如 `cdc-project-combo` |
-| description | string | 是 | 项目一句话描述，用于列表页卡片 |
-| cover | string | 是 | 封面图路径，如 `/images/projects/cdc-cover.png` |
-| industry | string | 是 | 所属行业，如 `ai-gov`、`fintech`、`data-governance` |
-| role | string | 是 | 担任角色，如 `项目经理`、`PMO负责人` |
-| duration | string | 是 | 项目周期，如 `2024.09 - 至今` |
-| teamSize | number | 否 | 团队规模，如 `50` |
-| budget | string | 否 | 资金规模描述，如 `千万级` |
-| status | enum | 是 | 项目状态: `completed` / `in-progress` / `paused` |
-| tags | string[] | 是 | 技术/领域标签，如 `["AI", "政务", "数据治理"]` |
-| featured | boolean | 否 | 是否精选展示，默认 `false` |
-| metrics | object[] | 否 | 关键指标数组，见下方定义 |
-| order | number | 否 | 排序权重，数字越小越靠前 |
+export default defineConfig({
+  branch: process.env.VERCEL_GIT_COMMIT_REF || 'main',
+  clientId: process.env.TINA_CLIENT_ID,
+  token: process.env.TINA_TOKEN,
+  build: {
+    outputFolder: 'admin',
+    publicFolder: 'public',
+  },
+  media: {
+    tina: {
+      mediaRoot: 'images',
+      publicFolder: 'public',
+    },
+  },
+  schema: {
+    collections: [
+      // 项目作品集
+      {
+        name: 'project',
+        label: '项目',
+        path: 'content/projects',
+        format: 'mdx',
+        ui: {
+          filename: {
+            readonly: false,
+            slugify: (values) => values?.slug || '',
+          },
+        },
+        fields: [
+          { type: 'string', name: 'title', label: '项目名称', isTitle: true, required: true },
+          { type: 'string', name: 'slug', label: 'URL标识', required: true },
+          { type: 'string', name: 'description', label: '项目描述', required: true },
+          { type: 'image', name: 'cover', label: '封面图', required: true },
+          {
+            type: 'string',
+            name: 'industry',
+            label: '所属行业',
+            options: ['ai-gov', 'fintech', 'data-governance', 'scale', 'general'],
+            required: true,
+          },
+          { type: 'string', name: 'role', label: '担任角色', required: true },
+          { type: 'string', name: 'duration', label: '项目周期', required: true },
+          { type: 'number', name: 'teamSize', label: '团队规模' },
+          { type: 'string', name: 'budget', label: '资金规模' },
+          {
+            type: 'string',
+            name: 'status',
+            label: '项目状态',
+            options: ['completed', 'in-progress', 'paused'],
+            required: true,
+          },
+          { type: 'string', name: 'tags', label: '标签', list: true, required: true },
+          { type: 'boolean', name: 'featured', label: '精选展示', default: false },
+          {
+            type: 'object',
+            name: 'metrics',
+            label: '关键指标',
+            list: true,
+            fields: [
+              { type: 'string', name: 'label', label: '指标名称' },
+              { type: 'string', name: 'value', label: '指标值' },
+            ],
+          },
+          { type: 'number', name: 'order', label: '排序权重', default: 999 },
+          { type: 'rich-text', name: 'body', label: '正文', isBody: true },
+        ],
+      },
 
-**metrics 子结构**:
+      // 博客文章
+      {
+        name: 'post',
+        label: '博客文章',
+        path: 'content/blog',
+        format: 'mdx',
+        ui: {
+          filename: {
+            readonly: false,
+            slugify: (values) => values?.slug || '',
+          },
+        },
+        fields: [
+          { type: 'string', name: 'title', label: '文章标题', isTitle: true, required: true },
+          { type: 'string', name: 'slug', label: 'URL标识', required: true },
+          { type: 'string', name: 'description', label: '文章摘要', required: true },
+          { type: 'datetime', name: 'date', label: '发布日期', required: true, ui: { dateFormat: 'YYYY-MM-DD' } },
+          { type: 'datetime', name: 'updatedAt', label: '更新日期', ui: { dateFormat: 'YYYY-MM-DD' } },
+          { type: 'string', name: 'category', label: '分类', required: true },
+          { type: 'string', name: 'tags', label: '标签', list: true, required: true },
+          { type: 'image', name: 'cover', label: '封面图' },
+          { type: 'boolean', name: 'featured', label: '推荐文章', default: false },
+          { type: 'rich-text', name: 'body', label: '正文', isBody: true },
+        ],
+      },
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| label | string | 指标名称，如 `管理资金` |
-| value | string | 指标值，如 `5000万+` |
+      // 工作经历
+      {
+        name: 'experience',
+        label: '工作经历',
+        path: 'content/experience',
+        format: 'mdx',
+        ui: {
+          allowedActions: { create: false, delete: false },
+        },
+        fields: [
+          { type: 'string', name: 'title', label: '页面标题', isTitle: true, required: true },
+          { type: 'string', name: 'summary', label: '职业生涯概述', required: true },
+          {
+            type: 'object',
+            name: 'items',
+            label: '工作经历条目',
+            list: true,
+            fields: [
+              { type: 'string', name: 'company', label: '公司名称', required: true },
+              { type: 'string', name: 'role', label: '职位', required: true },
+              { type: 'string', name: 'duration', label: '时间段', required: true },
+              { type: 'string', name: 'industry', label: '所属行业' },
+              { type: 'string', name: 'highlights', label: '核心成果', list: true },
+              { type: 'string', name: 'narrative', label: '关键转折叙事', ui: { component: 'textarea' } },
+              { type: 'string', name: 'tools', label: '工具/方法论', list: true },
+            ],
+          },
+          { type: 'rich-text', name: 'body', label: '正文', isBody: true },
+        ],
+      },
 
-**示例**:
+      // 管理方法论
+      {
+        name: 'methodology',
+        label: '管理方法论',
+        path: 'content/methodology',
+        format: 'mdx',
+        ui: {
+          allowedActions: { create: false, delete: false },
+        },
+        fields: [
+          { type: 'string', name: 'title', label: '页面标题', isTitle: true, required: true },
+          { type: 'string', name: 'description', label: '页面描述', required: true },
+          {
+            type: 'object',
+            name: 'sections',
+            label: '方法论区块',
+            list: true,
+            fields: [
+              { type: 'string', name: 'id', label: '区块ID', required: true },
+              { type: 'string', name: 'title', label: '区块标题', required: true },
+              { type: 'rich-text', name: 'content', label: '区块内容' },
+            ],
+          },
+          { type: 'rich-text', name: 'body', label: '正文', isBody: true },
+        ],
+      },
 
-```mdx
----
-title: 国家疾控中心项目组合管理
-slug: cdc-project-combo
-description: 同时管理AI+政务、数据治理、平台迁移三大子项目，构建PMO体系规范
-industry: ai-gov
-role: PMO负责人
-duration: 2024.09 - 至今
-teamSize: 50
-budget: 千万级
-status: in-progress
-tags: ['AI', '政务', '数据治理', 'PMO']
-featured: true
-metrics:
-  - label: 管理资金
-    value: 5000万+
-  - label: 团队规模
-    value: 50人
-  - label: 项目数量
-    value: 3个
-order: 1
----
-
-## 项目背景
-
-这里是项目的正文内容，使用 Markdown 格式书写...
-
-## 关键决策
-
-### 决策1: 技术选型
-
-详细描述关键决策点...
-
-## 成果数据
-
-- 资金使用率: 98%
-- 交付准时率: 100%
-
-## 复盘思考
-
-项目结束后的一些思考...
+      // 全局配置
+      {
+        name: 'site',
+        label: '站点配置',
+        path: 'content/site',
+        format: 'json',
+        ui: {
+          allowedActions: { create: false, delete: false },
+        },
+        fields: [
+          { type: 'string', name: 'title', label: '站点标题', required: true },
+          { type: 'string', name: 'description', label: '站点描述', required: true },
+          { type: 'string', name: 'author', label: '作者名', required: true },
+          { type: 'string', name: 'email', label: '联系邮箱' },
+          {
+            type: 'object',
+            name: 'social',
+            label: '社交链接',
+            list: true,
+            fields: [
+              { type: 'string', name: 'platform', label: '平台' },
+              { type: 'string', name: 'url', label: '链接' },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+});
 ```
 
-### 2.2 博客文章 (Post)
+### 2.2 内容文件路径映射
 
-**文件位置**: `content/blog/*.mdx`
-
-**Frontmatter 定义**:
-
-| 字段 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| title | string | 是 | 文章标题 |
-| slug | string | 是 | URL 标识 |
-| description | string | 是 | 文章摘要，用于列表页和 SEO |
-| date | string (ISO) | 是 | 发布日期，如 `2024-01-15` |
-| updatedAt | string (ISO) | 否 | 更新日期 |
-| category | string | 是 | 分类，如 `项目管理`、`技术分享`、`行业观察` |
-| tags | string[] | 是 | 标签数组 |
-| cover | string | 否 | 封面图路径 |
-| readingTime | number | 否 | 预计阅读时长(分钟)，可自动生成 |
-| featured | boolean | 否 | 是否推荐文章，默认 `false` |
-
-**示例**:
-
-```mdx
----
-title: 从0到1搭建PMO管理体系的实践路径
-slug: pmo-from-zero
-description: 基于7年跨行业项目管理经验，总结PMO体系搭建的5个关键阶段与避坑指南
-date: 2024-03-10
-category: 项目管理
-tags: ['PMO', '体系搭建', '管理方法论']
-featured: true
----
-
-## 引言
-
-正文内容...
-```
-
-### 2.3 工作经历 (Experience)
-
-**文件位置**: `content/experience/experiences.mdx`
-
-**Frontmatter 定义**:
-
-| 字段 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| title | string | 是 | 页面标题 |
-| summary | string | 是 | 职业生涯概述 |
-
-**正文结构**: 使用 Markdown 定义工作经历的时间线。格式如下：
-
-```mdx
----
-title: 工作经历
-summary: 7年项目管理经验，横跨互联网、金融、政务、医疗、制造五大行业
----
-
-## 工作经历
-
-### 中国电信重庆分公司（万友） | 产品项目经理 | 2024.10 - 至今
-
-- 负责政务、公卫医疗领域项目，涵盖从商机获取到验收的全周期项目管理
-- 主导需求对接、建设方案编制、项目造价、技术评估、招投标技术方案
-- 统筹管理上下游供应商与自研团队，全流程管控项目交付
-- 管理国家疾控中心项目组合，总资金规模超2000w
-
-### 瀚华融资担保股份有限公司 | PMO | 2022.04 - 2024.10
-
-- 金融领域PMO体系搭建、敏捷转型落地与产研团队管理
-- 统筹业务组、数据中台组（20人）团队管理
-- 制定《项目管理规范》《研发流程规范》《绩效评价体系》《知识库与模板库规范》
-- 设计并落地数据驱动的管理工具链，整合JIRA、飞书等平台
-
-### 北京三维天地科技股份有限公司重庆分公司 | 项目经理 | 2021.09 - 2023.02
-
-- 传统制造业主数据治理项目管理
-- 统筹主数据治理及系统实施项目管理工作
-- 管理现场实施团队、对接远程研发团队
-- 项目金额480w，如期初验并延展至二期
-
-### 北京字节跳动科技有限公司（人瑞） | 项目负责人&数据BP | 2020.10 - 2021.08
-
-- 互联网行业AI数据标注项目管理及数据分析工作
-- 对接AI算法、语言专家，制定标注规则、培训方案
-- 兼任数据BP，设计业务线（280+人）绩效体系
-- 成功交付项目数33个，并行管理项目数6个，最大执行成员800+
-
-### 北京湛腾世纪科技有限公司 | 技术主管 | 2018.08 - 2020.08
-
-- 测试团队0-1搭建、管理以及测试项目管理
-- 从0到1搭建重庆分部测试团队，完成23人团队招聘及技术培训
-- 统筹全球性外场测试项目端到端交付
-- 深度参与运营商前沿技术验证（VoLTE/NSA首轮场测）
-```
-
-**解析规则**: 通过 `###` 级别标题解析每条工作经历，格式固定为 `公司名 | 职位 | 时间段`。
-
-### 2.4 方法论 (Methodology)
-
-**文件位置**: `content/methodology/methodology.mdx`
-
-**Frontmatter 定义**:
-
-| 字段 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| title | string | 是 | 页面标题 |
-| description | string | 是 | 页面描述 |
-
-**正文结构**: 描述PMO体系、制度规范、工具链、敏捷转型等内容。
+| Collection | 文件路径 | 说明 |
+|-----------|---------|------|
+| `project` | `content/projects/*.mdx` | 每个项目一个 MDX 文件 |
+| `post` | `content/blog/*.mdx` | 每篇文章一个 MDX 文件 |
+| `experience` | `content/experience/experiences.mdx` | 单文件，包含所有经历 |
+| `methodology` | `content/methodology/methodology.mdx` | 单文件，包含所有方法论 |
+| `site` | `content/site/config.json` | 站点全局配置 |
 
 ---
 
@@ -227,7 +244,8 @@ export interface ProjectMetric {
   value: string;
 }
 
-export interface ProjectFrontmatter {
+export interface Project {
+  id: string;
   title: string;
   slug: string;
   description: string;
@@ -235,38 +253,32 @@ export interface ProjectFrontmatter {
   industry: string;
   role: string;
   duration: string;
-  teamSize?: number;
-  budget?: string;
+  teamSize?: number | null;
+  budget?: string | null;
   status: ProjectStatus;
   tags: string[];
   featured: boolean;
-  metrics?: ProjectMetric[];
+  metrics?: ProjectMetric[] | null;
   order: number;
-}
-
-export interface Project extends ProjectFrontmatter {
-  content: unknown; // next-mdx-remote serialize 结果 (MDXRemoteSerializeResult)
+  body: unknown; // TinaCMS rich-text 渲染结果
 }
 
 // ============================================
 // 博客文章类型
 // ============================================
 
-export interface PostFrontmatter {
+export interface Post {
+  id: string;
   title: string;
   slug: string;
   description: string;
   date: string;
-  updatedAt?: string;
+  updatedAt?: string | null;
   category: string;
   tags: string[];
-  cover?: string;
-  readingTime?: number;
+  cover?: string | null;
   featured: boolean;
-}
-
-export interface Post extends PostFrontmatter {
-  content: unknown; // next-mdx-remote serialize 结果 (MDXRemoteSerializeResult)
+  body: unknown; // TinaCMS rich-text 渲染结果
 }
 
 // ============================================
@@ -277,14 +289,18 @@ export interface ExperienceItem {
   company: string;
   role: string;
   duration: string;
-  highlights: string[];
-  narrative?: string; // 关键转折叙事
+  industry?: string | null;
+  highlights?: string[] | null;
+  narrative?: string | null;
+  tools?: string[] | null;
 }
 
 export interface Experience {
+  id: string;
   title: string;
   summary: string;
   items: ExperienceItem[];
+  body: unknown;
 }
 
 // ============================================
@@ -294,13 +310,27 @@ export interface Experience {
 export interface MethodologySection {
   id: string;
   title: string;
-  content: string;
+  content: unknown;
 }
 
 export interface Methodology {
+  id: string;
   title: string;
   description: string;
   sections: MethodologySection[];
+  body: unknown;
+}
+
+// ============================================
+// 站点配置类型
+// ============================================
+
+export interface SiteConfig {
+  title: string;
+  description: string;
+  author: string;
+  email?: string | null;
+  social?: { platform: string; url: string }[] | null;
 }
 
 // ============================================
@@ -334,79 +364,74 @@ export interface SocialLink {
 
 ---
 
-## 4. MDX 内容解析配置
+## 4. TinaCMS 内容查询层
 
-### 4.1 内容查询层
+### 4.1 客户端配置
+
+**文件位置**: 使用 TinaCMS CLI 自动生成的客户端
+
+TinaCMS CLI (`npx @tinacms/cli init`) 会自动在 `tina/__generated__/` 目录下生成类型安全的客户端：
+
+```
+tina/__generated__/
+  ├── client.ts       # 预配置的客户端实例
+  ├── types.ts        # TypeScript 类型定义
+  └── queries.ts      # GraphQL 查询
+```
+
+**使用方式** — 直接导入自动生成的客户端：
+
+```typescript
+// lib/content.ts
+import { client } from '../tina/__generated__/client';
+import type { Project, Post, Experience, Methodology, SiteConfig } from '@/types';
+```
+
+**不需要**手动创建 `lib/tina-client.ts` 文件。
+
+### 4.2 内容查询函数
 
 **文件位置**: `lib/content.ts`
 
 ```typescript
-import fs from 'fs';
-import path from 'path';
-import matter from 'gray-matter';
-import { serialize } from 'next-mdx-remote/serialize';
-import type { ProjectFrontmatter, PostFrontmatter } from '@/types';
-
-const contentDir = path.join(process.cwd(), 'content');
-
-// ============================================
-// 通用工具函数
-// ============================================
-
-function getMDXFiles(dir: string): string[] {
-  const fullDir = path.join(contentDir, dir);
-  if (!fs.existsSync(fullDir)) return [];
-  return fs
-    .readdirSync(fullDir)
-    .filter((f) => f.endsWith('.mdx'))
-    .map((f) => path.join(fullDir, f));
-}
-
-function parseMDXFile<T>(filePath: string): { frontmatter: T; content: string } {
-  const raw = fs.readFileSync(filePath, 'utf-8');
-  const { data, content } = matter(raw);
-  return { frontmatter: data as T, content };
-}
-
-function calculateReadingTime(content: string): number {
-  const wordsPerMinute = 200;
-  const words = content.trim().split(/\s+/).length;
-  return Math.ceil(words / wordsPerMinute);
-}
+import { client } from '../tina/__generated__/client';
+import type { Project, Post, Experience, Methodology, SiteConfig } from '@/types';
 
 // ============================================
 // 项目查询
 // ============================================
 
-export async function getAllProjects() {
-  const files = getMDXFiles('projects');
-  const projects = files.map((file) => {
-    const { frontmatter } = parseMDXFile<ProjectFrontmatter>(file);
-    return { ...frontmatter };
+export async function getAllProjects(): Promise<Project[]> {
+  const result = await client.queries.projectConnection({
+    sort: 'order',
+    last: 100,
   });
-  return projects.sort((a, b) => (a.order ?? 999) - (b.order ?? 999));
+  return (
+    result.data.projectConnection.edges?.map((edge) => ({
+      ...edge.node,
+      body: edge.node.body,
+    })) || []
+  );
 }
 
-export async function getFeaturedProjects(limit = 4) {
+export async function getFeaturedProjects(limit = 4): Promise<Project[]> {
   const all = await getAllProjects();
   return all.filter((p) => p.featured).slice(0, limit);
 }
 
-export async function getProjectBySlug(slug: string) {
-  const files = getMDXFiles('projects');
-  const file = files.find((f) => f.includes(`${slug}.mdx`));
-  if (!file) return null;
-  const { frontmatter, content } = parseMDXFile<ProjectFrontmatter>(file);
-  const mdxSource = await serialize(content);
-  return { ...frontmatter, content: mdxSource };
+export async function getProjectBySlug(slug: string): Promise<Project | null> {
+  const result = await client.queries.project({
+    relativePath: `${slug}.mdx`,
+  });
+  return result.data.project ? { ...result.data.project } : null;
 }
 
-export async function getProjectsByIndustry(industry: string) {
+export async function getProjectsByIndustry(industry: string): Promise<Project[]> {
   const all = await getAllProjects();
   return all.filter((p) => p.industry === industry);
 }
 
-export async function getAllIndustries() {
+export async function getAllIndustries(): Promise<string[]> {
   const all = await getAllProjects();
   return [...new Set(all.map((p) => p.industry))];
 }
@@ -415,44 +440,42 @@ export async function getAllIndustries() {
 // 博客文章查询
 // ============================================
 
-export async function getAllPosts() {
-  const files = getMDXFiles('blog');
-  const posts = files.map((file) => {
-    const { frontmatter, content } = parseMDXFile<PostFrontmatter>(file);
-    const readingTime = calculateReadingTime(content);
-    return { ...frontmatter, readingTime };
+export async function getAllPosts(): Promise<Post[]> {
+  const result = await client.queries.postConnection({
+    sort: 'date',
+    last: 100,
   });
-  return posts.sort(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-  );
+  const posts =
+    result.data.postConnection.edges?.map((edge) => ({
+      ...edge.node,
+      body: edge.node.body,
+    })) || [];
+  return posts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 }
 
-export async function getPostBySlug(slug: string) {
-  const files = getMDXFiles('blog');
-  const file = files.find((f) => f.includes(`${slug}.mdx`));
-  if (!file) return null;
-  const { frontmatter, content } = parseMDXFile<PostFrontmatter>(file);
-  const mdxSource = await serialize(content);
-  const readingTime = calculateReadingTime(content);
-  return { ...frontmatter, readingTime, content: mdxSource };
+export async function getPostBySlug(slug: string): Promise<Post | null> {
+  const result = await client.queries.post({
+    relativePath: `${slug}.mdx`,
+  });
+  return result.data.post ? { ...result.data.post } : null;
 }
 
-export async function getFeaturedPosts(limit = 3) {
+export async function getFeaturedPosts(limit = 3): Promise<Post[]> {
   const all = await getAllPosts();
   return all.filter((p) => p.featured).slice(0, limit);
 }
 
-export async function getPostsByCategory(category: string) {
+export async function getPostsByCategory(category: string): Promise<Post[]> {
   const all = await getAllPosts();
   return all.filter((p) => p.category === category);
 }
 
-export async function getAllCategories() {
+export async function getAllCategories(): Promise<string[]> {
   const all = await getAllPosts();
   return [...new Set(all.map((p) => p.category))];
 }
 
-export async function searchPosts(query: string) {
+export async function searchPosts(query: string): Promise<Post[]> {
   const lowerQuery = query.toLowerCase();
   const all = await getAllPosts();
   return all.filter(
@@ -467,142 +490,121 @@ export async function searchPosts(query: string) {
 // 工作经历查询
 // ============================================
 
-export async function getExperience() {
-  const filePath = path.join(contentDir, 'experience', 'experiences.mdx');
-  if (!fs.existsSync(filePath)) return null;
-  const { frontmatter, content } = parseMDXFile<{
-    title: string;
-    summary: string;
-  }>(filePath);
-  const mdxSource = await serialize(content);
-  return { ...frontmatter, content: mdxSource };
+export async function getExperience(): Promise<Experience | null> {
+  const result = await client.queries.experience({
+    relativePath: 'experiences.mdx',
+  });
+  return result.data.experience ? { ...result.data.experience } : null;
 }
 
 // ============================================
 // 方法论查询
 // ============================================
 
-export async function getMethodology() {
-  const filePath = path.join(contentDir, 'methodology', 'methodology.mdx');
-  if (!fs.existsSync(filePath)) return null;
-  const { frontmatter, content } = parseMDXFile<{
-    title: string;
-    description: string;
-  }>(filePath);
-  const mdxSource = await serialize(content);
-  return { ...frontmatter, content: mdxSource };
+export async function getMethodology(): Promise<Methodology | null> {
+  const result = await client.queries.methodology({
+    relativePath: 'methodology.mdx',
+  });
+  return result.data.methodology ? { ...result.data.methodology } : null;
+}
+
+// ============================================
+// 站点配置查询
+// ============================================
+
+export async function getSiteConfig(): Promise<SiteConfig | null> {
+  const result = await client.queries.site({
+    relativePath: 'config.json',
+  });
+  return result.data.site ? { ...result.data.site } : null;
 }
 ```
 
-### 4.2 MDX 序列化配置
+### 4.3 正文渲染（关键）
 
-**文件位置**: `lib/mdx.ts`
+TinaCMS 的 `rich-text` 字段返回的是 JSON 结构化数据，**不能直接用 dangerouslySetInnerHTML**。需要使用 TinaCMS 提供的 `<TinaMarkdown>` 组件渲染：
 
 ```typescript
-import { serialize } from 'next-mdx-remote/serialize';
-import remarkGfm from 'remark-gfm';
-import rehypeSlug from 'rehype-slug';
-import rehypeAutolinkHeadings from 'rehype-autolink-headings';
-import rehypePrismPlus from 'rehype-prism-plus';
+// components/shared/tina-markdown.tsx
+'use client';
 
-export async function serializeMDX(content: string) {
-  return serialize(content, {
-    mdxOptions: {
-      remarkPlugins: [remarkGfm],
-      rehypePlugins: [
-        rehypeSlug,
-        [rehypeAutolinkHeadings, { behavior: 'wrap' }],
-        rehypePrismPlus,
-      ],
-    },
-  });
+import { TinaMarkdown } from 'tinacms/dist/rich-text';
+
+interface TinaMarkdownRendererProps {
+  content: any; // TinaCMS rich-text JSON
+}
+
+export function TinaMarkdownRenderer({ content }: TinaMarkdownRendererProps) {
+  if (!content) return null;
+  return <TinaMarkdown content={content} />;
+}
+```
+
+**在页面中使用**：
+
+```tsx
+// app/projects/[slug]/page.tsx
+import { TinaMarkdownRenderer } from '@/components/shared/tina-markdown';
+import { getProjectBySlug } from '@/lib/content';
+
+export default async function ProjectPage({ params }: { params: { slug: string } }) {
+  const project = await getProjectBySlug(params.slug);
+  if (!project) return notFound();
+
+  return (
+    <article>
+      <h1>{project.title}</h1>
+      <TinaMarkdownRenderer content={project.body} />
+    </article>
+  );
 }
 ```
 
 ---
 
-## 5. API 接口定义
+## 5. TinaCMS 编辑界面集成
 
-### 5.1 接口概览
+### 5.1 编辑路由
+
+**文件位置**: `app/admin/[[...tina]]/page.tsx`
+
+TinaCMS CLI (`npx @tinacms/cli init`) 会自动生成 admin 路由文件，无需手动编写。
+
+如果手动创建，最小实现如下：
+
+```typescript
+import TinaPage from 'tinacms';
+
+export default TinaPage;
+```
+
+### 5.2 本地编辑模式
+
+```bash
+# 方式一：同时启动 TinaCMS GraphQL 服务器和 Next.js 开发服务器
+npx tinacms dev -c "next dev"
+
+# 方式二：先启动 TinaCMS 服务器，再启动 Next.js（两个终端）
+# 终端1: npx tinacms dev
+# 终端2: next dev
+```
+
+访问 `http://localhost:3000/admin` 进入 TinaCMS 编辑界面。
+
+---
+
+## 6. API 接口定义
+
+### 6.1 接口概览
 
 | 接口 | 方法 | 路径 | 说明 |
 |------|------|------|------|
 | 联系表单 | POST | `/api/contact` | 接收表单数据，发送邮件 |
+| TinaCMS GraphQL | POST | `/api/tina/graphql` | TinaCMS 内容查询 API |
 
-### 5.2 联系表单接口
+### 6.2 联系表单接口
 
-#### 请求
-
-```
-POST /api/contact
-Content-Type: application/json
-```
-
-**请求体**:
-
-| 字段 | 类型 | 必填 | 约束 |
-|------|------|------|------|
-| name | string | 是 | 2-20 字符 |
-| company | string | 否 | 最大 50 字符 |
-| email | string | 是 | 有效邮箱格式 |
-| subject | string | 是 | 枚举: `business`, `recruit`, `consult`, `other` |
-| message | string | 是 | 10-2000 字符 |
-
-**请求示例**:
-
-```json
-{
-  "name": "张三",
-  "company": "某某科技公司",
-  "email": "zhangsan@example.com",
-  "subject": "business",
-  "message": "我们有项目管理咨询需求，希望能与您取得联系..."
-}
-```
-
-#### 响应
-
-**成功 (200 OK)**:
-
-```json
-{
-  "success": true,
-  "message": "邮件发送成功"
-}
-```
-
-**客户端错误 (400 Bad Request)**:
-
-```json
-{
-  "success": false,
-  "error": "请求数据无效",
-  "details": [
-    { "field": "email", "message": "请输入有效的邮箱地址" },
-    { "field": "message", "message": "消息至少10个字符" }
-  ]
-}
-```
-
-**限流 (429 Too Many Requests)**:
-
-```json
-{
-  "success": false,
-  "error": "请求过于频繁，请稍后再试"
-}
-```
-
-**服务端错误 (500 Internal Server Error)**:
-
-```json
-{
-  "success": false,
-  "error": "邮件发送失败，请稍后重试"
-}
-```
-
-### 5.3 API 实现代码
+与 v1.1 版本一致，详见原文档第5节。
 
 **文件位置**: `app/api/contact/route.ts`
 
@@ -681,9 +683,9 @@ ${data.message}
 
 ---
 
-## 6. 数据验证规则汇总
+## 7. 数据验证规则汇总
 
-### 6.1 前端验证 (Zod Schema)
+### 7.1 前端验证 (Zod Schema)
 
 ```typescript
 const contactSchema = z.object({
@@ -695,19 +697,15 @@ const contactSchema = z.object({
 });
 ```
 
-### 6.2 服务端验证
+### 7.2 TinaCMS Schema 验证
 
-与前端使用同一 Zod Schema，在 API Route 中二次验证，防止绕过前端直接调用 API。
-
-### 6.3 MDX 内容验证
-
-- 构建时通过 TypeScript 类型断言验证 frontmatter 字段
-- 必填字段缺失会导致构建失败（类型检查报错）
-- 枚举字段值不在允许范围内会导致构建失败
+- TinaCMS 在编辑界面自动验证字段类型和必填规则
+- 枚举字段提供下拉选择，防止无效值
+- 构建时通过 TypeScript 类型保证查询安全
 
 ---
 
-## 7. 环境变量清单
+## 8. 环境变量清单
 
 | 变量名 | 说明 | 必填 | 示例 |
 |--------|------|------|------|
@@ -715,3 +713,13 @@ const contactSchema = z.object({
 | `CONTACT_EMAIL` | 接收联系邮件的邮箱 | 是 | `1634099882@qq.com` |
 | `NEXT_PUBLIC_SITE_URL` | 站点URL (用于 SEO) | 否 | `https://tu-kui.dev` |
 | `UMAMI_WEBSITE_ID` | Umami 统计站点 ID | 否 | `xxxxxxxx` |
+| `TINA_CLIENT_ID` | TinaCMS Client ID (生产环境) | 否 | `xxxxxxxx` |
+| `TINA_TOKEN` | TinaCMS 只读 Token (生产环境) | 否 | `xxxxxxxx` |
+| `NEXT_PUBLIC_TINA_CLIENT_ID` | TinaCMS Client ID (前端) | 否 | `xxxxxxxx` |
+| `NEXT_PUBLIC_TINA_TOKEN` | TinaCMS Token (前端) | 否 | `xxxxxxxx` |
+| `VERCEL_GIT_COMMIT_REF` | Vercel 自动注入的分支名 | 否 | `main` |
+
+**注意**: 
+- 本地开发时不需要 `TINA_CLIENT_ID` 和 `TINA_TOKEN`，TinaCMS 以本地模式运行
+- 生产部署到 Vercel 时，需在 TinaCloud 注册项目并获取 Client ID 和 Token
+- 站点配置（标题、描述、作者等）从 TinaCMS 的 `site` Collection 读取，不再硬编码

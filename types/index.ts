@@ -51,26 +51,40 @@ export interface ExperienceItem {
   company: string;
   role: string;
   duration: string;
+  industry?: string;
   highlights: string[];
   narrative?: string;
+  tools?: string[];
 }
 
 export interface Experience {
+  id?: string;
   title: string;
   summary: string;
   items: ExperienceItem[];
+  body?: string | unknown;
 }
 
 export interface MethodologySection {
   id: string;
   title: string;
-  content: string;
+  content: string | unknown;
 }
 
 export interface Methodology {
+  id?: string;
   title: string;
   description: string;
   sections: MethodologySection[];
+  body?: string | unknown;
+}
+
+export interface SiteConfig {
+  title: string;
+  description: string;
+  author: string;
+  email?: string;
+  social?: { platform: string; url: string }[];
 }
 
 export interface ContactFormData {

@@ -23,9 +23,9 @@
 
 | 技术 | 用途 | 理由 |
 |------|------|------|
+| TinaCMS | Git-based CMS + 内容管理 | 提供可视化编辑界面，内容存于Git，无需数据库 |
 | MDX | 博客文章、项目案例 | 支持React组件嵌入、代码高亮、数学公式 |
-| next-mdx-remote | MDX内容渲染 | 在Server Component中解析渲染MDX，无需Contentlayer |
-| gray-matter | Frontmatter解析 | 提取文章元数据 |
+| tinacms/cli | Schema定义与客户端生成 | 定义Collection Schema，生成类型安全的查询客户端 |
 | rehype/remark插件链 | Markdown处理 | 目录生成、代码高亮、外链处理 |
 
 ### 1.3 后端与部署
@@ -47,7 +47,7 @@
 
 ### 1.5 技术栈排除项
 
-- **不使用 CMS (Sanity/Contentful)**：个人站点内容更新频率低（月更），MDX + Git 管理足够，避免增加架构复杂度和依赖
+- **不使用 SaaS CMS (Sanity/Contentful)**：采用 TinaCMS (Git-based CMS)，内容存于Git仓库，无需外部SaaS依赖，同时提供可视化编辑界面
 - **不使用数据库 (PostgreSQL/Supabase)**：联系表单数据可直接通过Resend邮件转发，无需持久化存储。若未来需要留言功能，再考虑添加
 - **不使用状态管理库 (Zustand/Redux)**：站点以内容展示为主，无复杂全局状态，React Context + local state 足够
 - **不使用 CSS-in-JS (Styled Components/Emotion)**：Tailwind CSS 已覆盖所有样式需求，避免运行时开销
@@ -90,10 +90,11 @@
 │  │  └────────────┘                                     │   │
 │  └──────────────────────────────────────────────────────┘   │
 │  ┌──────────────────────────────────────────────────────┐   │
-│  │              内容层 (content/ directory)              │   │
+│  │              TinaCMS 内容层                            │   │
 │  │  ┌────────┐ ┌────────┐ ┌────────┐ ┌──────────────┐  │   │
-│  │  │projects│ │  blog  │ │experience│ │ methodology │  │   │
-│  │  │ (.mdx) │ │(.mdx)  │ │ (.mdx)  │ │  (.mdx)     │  │   │
+│  │  │ tina/  │ │content/│ │projects│ │ methodology │  │   │
+│  │  │config.ts│ │  blog  │ │experience│ │   (.mdx)    │  │   │
+│  │  │client  │ │ (.mdx) │ │  (.mdx) │ │             │  │   │
 │  │  └────────┘ └────────┘ └────────┘ └──────────────┘  │   │
 │  └──────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────┘
@@ -208,10 +209,15 @@ my-app/
 │       ├── section-title.tsx     # 章节标题
 │       └── markdown-renderer.tsx # MDX渲染器
 │
+├── tina/                         # TinaCMS 配置
+│   ├── config.ts                 # TinaCMS Schema 定义
+│   └── __generated__/            # 生成的客户端 (自动创建)
+│       ├── client.ts
+│       └── types.ts
+│
 ├── lib/                          # 工具函数和配置
 │   ├── utils.ts                  # cn()等通用工具
-│   ├── content.ts                # MDX内容解析与查询函数
-│   ├── mdx.ts                    # next-mdx-remote序列化配置
+│   ├── content.ts                # TinaCMS 内容查询函数封装
 │   ├── constants.ts              # 站点常量
 │   └── api.ts                    # API调用封装
 │
@@ -271,23 +277,36 @@ my-app/
 ### 4.1 内容数据流 (Build Time)
 
 ```
-content/*.mdx
+tina/config.ts (Schema定义)
+    │
+    ▼
+npx tinacms build  (生成 GraphQL 客户端)
+    │
+    ▼
+tina/__generated__/client.ts (TinaCMS生成类型安全客户端)
+    │
+    ▼
+content/*.mdx (Git管理的内容文件)
     │
     ▼
 lib/content.ts
-    │  使用 fs + gray-matter 读取并解析 frontmatter
-    │  提供查询函数: getAllProjects(), getProjectBySlug(),
-    │             getAllPosts(), getPostBySlug(), etc.
-    ▼
-lib/mdx.ts
-    │  使用 next-mdx-remote/serialize 渲染 MDX 正文
-    │  配置 rehype/remark 插件链
+    │  使用 TinaCMS 客户端查询内容
+    │  提供查询函数: client.queries.project(),
+    │             client.queries.post(), etc.
     ▼
 app/**/page.tsx
-    │  Server Component 在 build 时调用查询函数
+    │  Server Component 在 build 时调用 TinaCMS 查询
     │  生成静态 HTML
     ▼
 浏览器 (SSG HTML)
+
+[TinaCMS编辑界面]
+    │
+    ▼
+可视化编辑 content/*.mdx
+    │
+    ▼
+Git提交 → 自动触发 Vercel 重新构建
 ```
 
 ### 4.2 主题状态流 (Client Side)
@@ -786,8 +805,7 @@ export default function Loading() {
     "zod": "^3.22.0",
     "@hookform/resolvers": "^3.3.0",
     "resend": "^3.2.0",
-    "next-mdx-remote": "^5.0.0",
-    "gray-matter": "^4.0.3",
+    "tinacms": "^2.0.0",
     "rehype-slug": "^6.0.0",
     "rehype-autolink-headings": "^7.0.0",
     "rehype-prism-plus": "^2.0.0",
@@ -798,6 +816,7 @@ export default function Loading() {
     "@types/node": "^20.0.0",
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
+    "@tinacms/cli": "^1.5.0",
     "autoprefixer": "^10.4.0",
     "postcss": "^8.4.0",
     "tailwindcss-animate": "^1.0.7",

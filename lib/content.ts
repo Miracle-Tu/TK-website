@@ -8,6 +8,7 @@ import type {
   ExperienceItem,
   Methodology,
   MethodologySection,
+  SiteConfig,
 } from '@/types';
 
 const contentDir = path.join(process.cwd(), 'content');
@@ -170,12 +171,24 @@ export function getExperience(): Experience | null {
   const { frontmatter, content } = parseMDXFile<{
     title: string;
     summary: string;
+    items?: ExperienceItem[];
   }>(filePath);
+
+  if (frontmatter.items && frontmatter.items.length > 0) {
+    return {
+      title: frontmatter.title,
+      summary: frontmatter.summary,
+      items: frontmatter.items,
+      body: content,
+    };
+  }
+
   const items = parseExperienceItems(content);
   return {
     title: frontmatter.title,
     summary: frontmatter.summary,
     items,
+    body: content,
   };
 }
 
@@ -219,11 +232,34 @@ export function getMethodology(): Methodology | null {
   const { frontmatter, content } = parseMDXFile<{
     title: string;
     description: string;
+    sections?: MethodologySection[];
   }>(filePath);
+
+  if (frontmatter.sections && frontmatter.sections.length > 0) {
+    return {
+      title: frontmatter.title,
+      description: frontmatter.description,
+      sections: frontmatter.sections,
+      body: content,
+    };
+  }
+
   const sections = parseMethodologySections(content);
   return {
     title: frontmatter.title,
     description: frontmatter.description,
     sections,
+    body: content,
   };
+}
+
+export function getSiteConfig(): SiteConfig | null {
+  const filePath = path.join(contentDir, 'site', 'config.json');
+  if (!fs.existsSync(filePath)) return null;
+  try {
+    const raw = fs.readFileSync(filePath, 'utf-8');
+    return JSON.parse(raw) as SiteConfig;
+  } catch {
+    return null;
+  }
 }

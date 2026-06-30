@@ -545,7 +545,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 | ScrollReveal | `components/shared/scroll-reveal.tsx` | Client | 滚动显示动画 |
 | CountUp | `components/shared/count-up.tsx` | Client | 数字计数动画 |
 | SectionTitle | `components/shared/section-title.tsx` | Server | 章节标题 |
-| MarkdownRenderer | `components/shared/markdown-renderer.tsx` | Server | MDX 渲染器 |
+| TinaMarkdownRenderer | `components/shared/tina-markdown.tsx` | Client | TinaCMS rich-text 渲染 |
 
 ---
 
@@ -577,12 +577,22 @@ vercel --prod
 
 在 Vercel Dashboard 设置以下环境变量：
 
-| 变量名 | 值 | 环境 |
-|--------|-----|------|
-| `RESEND_API_KEY` | `re_xxxxxxxx` | Production |
-| `CONTACT_EMAIL` | `1634099882@qq.com` | Production |
-| `NEXT_PUBLIC_SITE_URL` | `https://tu-kui.dev` | Production |
-| `UMAMI_WEBSITE_ID` | `xxxxxxxx` | Production |
+| 变量名 | 值 | 环境 | 说明 |
+|--------|-----|------|------|
+| `RESEND_API_KEY` | `re_xxxxxxxx` | Production | Resend 邮件 API |
+| `CONTACT_EMAIL` | `1634099882@qq.com` | Production | 接收邮件的邮箱 |
+| `NEXT_PUBLIC_SITE_URL` | `https://tu-kui.dev` | Production | 站点URL |
+| `UMAMI_WEBSITE_ID` | `xxxxxxxx` | Production | Umami 统计 |
+| `TINA_CLIENT_ID` | `xxxxxxxx` | Production | TinaCloud Client ID |
+| `TINA_TOKEN` | `xxxxxxxx` | Production | TinaCloud 只读 Token |
+| `NEXT_PUBLIC_TINA_CLIENT_ID` | `xxxxxxxx` | Production | TinaCloud Client ID (前端) |
+
+**TinaCMS 生产环境配置步骤**：
+1. 注册 [TinaCloud](https://app.tina.io/) 账号
+2. 创建新项目，绑定 GitHub 仓库
+3. 获取 Client ID 和 Token
+4. 在 Vercel 环境变量中填入上述值
+5. 设置分支为 `main`（或你的默认分支）
 
 ### 6.3 自定义域名
 
@@ -593,13 +603,18 @@ vercel --prod
 ### 6.4 构建验证
 
 ```bash
-# 本地构建测试
-npm run build
+# 方式一：本地开发（带 TinaCMS 热重载）
+npx tinacms dev -c "next dev"
+
+# 方式二：生产构建测试（先生成 TinaCMS 客户端，再构建 Next.js）
+npx tinacms build && next build
 
 # 检查构建输出
-ls -la out/     # output: 'export' 模式
-ls -la .next/   # server 模式
+ls -la .next/   # Next.js 构建输出
+ls -la tina/__generated__/   # TinaCMS 生成的客户端
 ```
+
+**注意**：`next build` 之前必须先运行 `tinacms build` 生成 GraphQL 客户端，否则构建会失败。
 
 ---
 
@@ -611,7 +626,10 @@ ls -la .next/   # server 模式
 - [ ] 配置 `tailwind.config.ts`，添加自定义颜色、字体、动画
 - [ ] 配置 `styles/globals.css`，定义 CSS 变量和暗色模式
 - [ ] 初始化 shadcn/ui，安装 button/card/input/textarea/select/badge 组件
-- [ ] 安装依赖: `framer-motion`, `react-hook-form`, `zod`, `@hookform/resolvers`, `resend`, `next-mdx-remote`, `gray-matter`, `rehype-slug`, `rehype-autolink-headings`, `rehype-prism-plus`, `remark-gfm`, `lucide-react`, `tailwindcss-animate`
+- [ ] 安装依赖: `framer-motion`, `react-hook-form`, `zod`, `@hookform/resolvers`, `resend`, `tinacms`, `rehype-slug`, `rehype-autolink-headings`, `rehype-prism-plus`, `remark-gfm`, `lucide-react`, `tailwindcss-animate`
+- [ ] 安装开发依赖: `@tinacms/cli`
+- [ ] 初始化 TinaCMS: `npx @tinacms/cli@latest init` (选择 Next.js + App Router)
+- [ ] 配置 `tina/config.ts`，定义 Collection Schema (project/post/experience/methodology/site)
 - [ ] 配置 `tsconfig.json` paths: `"@/*": ["./*"]`
 - [ ] 配置 `next.config.js` (静态导出或 server 模式)
 - [ ] 创建项目目录结构 (app/, components/, lib/, hooks/, content/, types/, public/)
@@ -668,12 +686,16 @@ ls -la .next/   # server 模式
 
 ### 7.4 内容填充阶段
 
-- [ ] 创建 `content/projects/*.mdx` (6个项目)
+- [ ] 配置 `tina/config.ts` Collection Schema
+- [ ] 运行 `npx tinacms dev` 生成本地 GraphQL 客户端
+- [ ] 实现 `lib/content.ts` (TinaCMS 查询函数封装，导入 `tina/__generated__/client`)
+- [ ] 实现 `components/shared/tina-markdown.tsx` (TinaMarkdown 渲染组件)
+- [ ] 创建 `content/projects/*.mdx` (6个项目，通过 TinaCMS 编辑界面或手动创建)
 - [ ] 创建 `content/blog/*.mdx` (5篇文章)
 - [ ] 创建 `content/experience/experiences.mdx`
 - [ ] 创建 `content/methodology/methodology.mdx`
-- [ ] 实现 `lib/content.ts` 内容查询函数（fs + gray-matter）
-- [ ] 实现 `lib/mdx.ts` MDX序列化配置（next-mdx-remote）
+- [ ] 创建 `content/site/config.json` (站点全局配置)
+- [ ] 确认 `app/admin/[[...tina]]/page.tsx` 已由 TinaCMS CLI 自动生成
 - [ ] 添加项目封面图到 `public/images/projects/`
 - [ ] 添加头像到 `public/images/avatar.jpg`
 - [ ] 添加简历 PDF 到 `public/resume.pdf`
@@ -692,13 +714,15 @@ ls -la .next/   # server 模式
 
 ### 7.6 测试 & 部署阶段
 
-- [ ] 本地开发测试: `npm run dev`
-- [ ] 本地构建测试: `npm run build`
+- [ ] 本地开发测试: `npx tinacms dev -c "next dev"`
+- [ ] 本地构建测试: `npx tinacms build && next build`
 - [ ] 检查所有页面路由正常
 - [ ] 检查暗色模式切换
 - [ ] 检查移动端响应式
 - [ ] 检查表单提交和邮件发送
-- [ ] 配置 Vercel 环境变量
+- [ ] 注册 TinaCloud 并获取 Client ID / Token
+- [ ] 配置 Vercel 环境变量（含 TinaCMS）
 - [ ] 部署到 Vercel
 - [ ] 绑定自定义域名
 - [ ] 验证生产环境功能
+- [ ] 验证 TinaCMS 编辑界面 (`/admin`) 可正常访问
