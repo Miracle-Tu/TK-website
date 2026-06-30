@@ -611,7 +611,10 @@ ls -la .next/   # server 模式
 - [ ] 配置 `tailwind.config.ts`，添加自定义颜色、字体、动画
 - [ ] 配置 `styles/globals.css`，定义 CSS 变量和暗色模式
 - [ ] 初始化 shadcn/ui，安装 button/card/input/textarea/select/badge 组件
-- [ ] 安装依赖: `framer-motion`, `react-hook-form`, `zod`, `@hookform/resolvers`, `resend`, `next-mdx-remote`, `gray-matter`, `rehype-slug`, `rehype-autolink-headings`, `rehype-prism-plus`, `remark-gfm`, `lucide-react`, `tailwindcss-animate`
+- [ ] 安装依赖: `framer-motion`, `react-hook-form`, `zod`, `@hookform/resolvers`, `resend`, `tinacms`, `rehype-slug`, `rehype-autolink-headings`, `rehype-prism-plus`, `remark-gfm`, `lucide-react`, `tailwindcss-animate`
+- [ ] 安装开发依赖: `@tinacms/cli`
+- [ ] 初始化 TinaCMS: `npx @tinacms/cli@latest init` (选择 Next.js + App Router)
+- [ ] 配置 `tina/config.ts`，定义 Collection Schema (project/post/experience/methodology/site)
 - [ ] 配置 `tsconfig.json` paths: `"@/*": ["./*"]`
 - [ ] 配置 `next.config.js` (静态导出或 server 模式)
 - [ ] 创建项目目录结构 (app/, components/, lib/, hooks/, content/, types/, public/)
@@ -668,12 +671,16 @@ ls -la .next/   # server 模式
 
 ### 7.4 内容填充阶段
 
-- [ ] 创建 `content/projects/*.mdx` (6个项目)
+- [ ] 配置 `tina/config.ts` Collection Schema
+- [ ] 运行 `npx tinacms dev` 生成本地 GraphQL 客户端
+- [ ] 实现 `lib/tina-client.ts` (TinaCMS 客户端)
+- [ ] 实现 `lib/content.ts` (TinaCMS 查询函数封装)
+- [ ] 创建 `content/projects/*.mdx` (6个项目，通过 TinaCMS 编辑界面或手动创建)
 - [ ] 创建 `content/blog/*.mdx` (5篇文章)
 - [ ] 创建 `content/experience/experiences.mdx`
 - [ ] 创建 `content/methodology/methodology.mdx`
-- [ ] 实现 `lib/content.ts` 内容查询函数（fs + gray-matter）
-- [ ] 实现 `lib/mdx.ts` MDX序列化配置（next-mdx-remote）
+- [ ] 创建 `content/site/config.json` (站点全局配置)
+- [ ] 实现 `app/admin/[[...tina]]/page.tsx` (TinaCMS 编辑界面路由)
 - [ ] 添加项目封面图到 `public/images/projects/`
 - [ ] 添加头像到 `public/images/avatar.jpg`
 - [ ] 添加简历 PDF 到 `public/resume.pdf`
