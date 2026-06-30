@@ -368,26 +368,33 @@ export interface SocialLink {
 
 ### 4.1 客户端配置
 
-**文件位置**: `lib/tina-client.ts`
+**文件位置**: 使用 TinaCMS CLI 自动生成的客户端
+
+TinaCMS CLI (`npx @tinacms/cli init`) 会自动在 `tina/__generated__/` 目录下生成类型安全的客户端：
+
+```
+tina/__generated__/
+  ├── client.ts       # 预配置的客户端实例
+  ├── types.ts        # TypeScript 类型定义
+  └── queries.ts      # GraphQL 查询
+```
+
+**使用方式** — 直接导入自动生成的客户端：
 
 ```typescript
-import { createClient } from 'tinacms/dist/client';
-import queries from '../tina/__generated__/queries';
-
-// TinaCMS 自动生成的类型安全客户端
-export const client = createClient({
-  url: process.env.TINA_CONTENT_URL || 'http://localhost:4001/graphql',
-  token: process.env.TINA_TOKEN || '',
-  queries,
-});
+// lib/content.ts
+import { client } from '../tina/__generated__/client';
+import type { Project, Post, Experience, Methodology, SiteConfig } from '@/types';
 ```
+
+**不需要**手动创建 `lib/tina-client.ts` 文件。
 
 ### 4.2 内容查询函数
 
 **文件位置**: `lib/content.ts`
 
 ```typescript
-import { client } from './tina-client';
+import { client } from '../tina/__generated__/client';
 import type { Project, Post, Experience, Methodology, SiteConfig } from '@/types';
 
 // ============================================
@@ -513,6 +520,46 @@ export async function getSiteConfig(): Promise<SiteConfig | null> {
 }
 ```
 
+### 4.3 正文渲染（关键）
+
+TinaCMS 的 `rich-text` 字段返回的是 JSON 结构化数据，**不能直接用 dangerouslySetInnerHTML**。需要使用 TinaCMS 提供的 `<TinaMarkdown>` 组件渲染：
+
+```typescript
+// components/shared/tina-markdown.tsx
+'use client';
+
+import { TinaMarkdown } from 'tinacms/dist/rich-text';
+
+interface TinaMarkdownRendererProps {
+  content: any; // TinaCMS rich-text JSON
+}
+
+export function TinaMarkdownRenderer({ content }: TinaMarkdownRendererProps) {
+  if (!content) return null;
+  return <TinaMarkdown content={content} />;
+}
+```
+
+**在页面中使用**：
+
+```tsx
+// app/projects/[slug]/page.tsx
+import { TinaMarkdownRenderer } from '@/components/shared/tina-markdown';
+import { getProjectBySlug } from '@/lib/content';
+
+export default async function ProjectPage({ params }: { params: { slug: string } }) {
+  const project = await getProjectBySlug(params.slug);
+  if (!project) return notFound();
+
+  return (
+    <article>
+      <h1>{project.title}</h1>
+      <TinaMarkdownRenderer content={project.body} />
+    </article>
+  );
+}
+```
+
 ---
 
 ## 5. TinaCMS 编辑界面集成
@@ -521,61 +568,28 @@ export async function getSiteConfig(): Promise<SiteConfig | null> {
 
 **文件位置**: `app/admin/[[...tina]]/page.tsx`
 
+TinaCMS CLI (`npx @tinacms/cli init`) 会自动生成 admin 路由文件，无需手动编写。
+
+如果手动创建，最小实现如下：
+
 ```typescript
-'use client';
+import TinaPage from 'tinacms';
 
-import { TinaCMS } from 'tinacms';
-import { useEffect, useState } from 'react';
-
-export default function AdminPage() {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) return <div>Loading TinaCMS...</div>;
-
-  return (
-    <div style={{ height: '100vh' }}>
-      <TinaCMS
-        branch="main"
-        clientId={process.env.NEXT_PUBLIC_TINA_CLIENT_ID}
-        token={process.env.NEXT_PUBLIC_TINA_TOKEN}
-        mediaStore={async () => {
-          const { TinaCloudMediaStore } = await import('tinacms');
-          return new TinaCloudMediaStore();
-        }}
-        cmsCallback={(cms) => {
-          import('tinacms').then(({ RouteMappingPlugin }) => {
-            const RouteMapping = new RouteMappingPlugin(
-              (collection, document) => {
-                if (collection.name === 'post') {
-                  return `/blog/${document._sys.filename}`;
-                }
-                if (collection.name === 'project') {
-                  return `/projects/${document._sys.filename}`;
-                }
-                return undefined;
-              }
-            );
-            cms.plugins.add(RouteMapping);
-          });
-        }}
-      >
-        <div>TinaCMS Admin</div>
-      </TinaCMS>
-    </div>
-  );
-}
+export default TinaPage;
 ```
 
 ### 5.2 本地编辑模式
 
 ```bash
-# 启动 TinaCMS 本地 GraphQL 服务器和编辑界面
+# 方式一：同时启动 TinaCMS GraphQL 服务器和 Next.js 开发服务器
 npx tinacms dev -c "next dev"
+
+# 方式二：先启动 TinaCMS 服务器，再启动 Next.js（两个终端）
+# 终端1: npx tinacms dev
+# 终端2: next dev
 ```
+
+访问 `http://localhost:3000/admin` 进入 TinaCMS 编辑界面。
 
 ---
 

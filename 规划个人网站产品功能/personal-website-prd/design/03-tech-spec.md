@@ -280,6 +280,9 @@ my-app/
 tina/config.ts (Schema定义)
     │
     ▼
+npx tinacms build  (生成 GraphQL 客户端)
+    │
+    ▼
 tina/__generated__/client.ts (TinaCMS生成类型安全客户端)
     │
     ▼
