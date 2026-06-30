@@ -34,8 +34,44 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://tu-kui.dev';
+
+  const personSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'Person',
+    name: '涂奎',
+    jobTitle: '产品项目经理 / PMO负责人',
+    email: '1634099882@qq.com',
+    url: siteUrl,
+    image: `${siteUrl}/avatar.png`,
+    sameAs: [],
+    knowsAbout: [
+      '项目管理',
+      'PMO体系建设',
+      '敏捷转型',
+      '数据驱动决策',
+      '风险管理',
+    ],
+    hasCredential: [
+      {
+        '@type': 'EducationalOccupationalCredential',
+        name: 'PMP',
+      },
+      {
+        '@type': 'EducationalOccupationalCredential',
+        name: 'NPDP',
+      },
+    ],
+  };
+
   return (
     <html lang="zh-CN" suppressHydrationWarning className={cn('font-sans', instrumentSans.variable)}>
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(personSchema) }}
+        />
+      </head>
       <body className="min-h-screen bg-bg text-ink font-sans antialiased">
         <ThemeProvider>{children}</ThemeProvider>
       </body>
