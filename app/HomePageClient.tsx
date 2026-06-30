@@ -16,6 +16,7 @@ interface HomePageClientProps {
 }
 
 export default function HomePageClient({ featuredProjects, latestPosts }: HomePageClientProps) {
+  // 影响力看板指标 - 按照 06-page-specs.md 第1.3节定义
   const metrics = [
     { value: 5000, suffix: '万+', label: '累计管理资金' },
     { value: 33, suffix: '+', label: '交付项目数' },
@@ -55,19 +56,19 @@ export default function HomePageClient({ featuredProjects, latestPosts }: HomePa
             transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
             className="text-center max-w-4xl mx-auto"
           >
+            {/* Hero徽章 - 按照 02-prototype.md 第3.2节定义 */}
             <div className="inline-flex items-center px-3 py-1 rounded-full border border-accent/30 text-accent font-mono text-xs mb-6">
-              资深项目管理专家
+              PMO负责人 · 7年跨行业项目管理 · PMP/NPDP 双认证
             </div>
 
+            {/* Hero主标题 - 按照 02-prototype.md 第3.2节定义 */}
             <h1 className="text-3xl sm:text-5xl font-bold text-white mb-6 leading-tight text-balance">
-              7年跨行业项目管理经验
-              <br />
-              从战略到执行的全链路赋能
+              产品项目经理 / 从0到1搭建PMO体系
             </h1>
 
+            {/* Hero副标题 - 按照 02-prototype.md 第3.2节定义 */}
             <p className="text-base sm:text-lg text-white/70 max-w-2xl mx-auto mb-10 leading-relaxed">
-              专注于政府数字化转型、金融科技、智能制造等领域的大型项目管理。
-              擅长从0到1搭建PMO体系，用数据驱动决策，带领团队高效交付有价值的成果。
+              7年项目管理经验，PMP & NPDP 双认证持有者。从测试技术主管起步，经历了字节跳动的AI数据项目管理、瀚华金融的PMO体系建设，到如今中国电信的千万级政企项目交付。横跨互联网、金融、政务、医疗、制造五大行业，让我沉淀出了一套可迁移的项目管理方法论。我相信项目管理的本质不是赶进度，而是在时间、成本、质量的三重约束下做最优决策。
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
