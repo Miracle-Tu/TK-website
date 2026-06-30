@@ -1,0 +1,117 @@
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg: #fafaf8;
+    --bg2: #f0f0ec;
+    --surface: #ffffff;
+    --ink: #1a1b2e;
+    --muted: #6b7280;
+    --rule: #e5e5e0;
+    --accent: #e8772e;
+    --accent2: #2dd4bf;
+    --radius: 0.5rem;
+    
+    --background: var(--bg);
+    --foreground: var(--ink);
+    --card: var(--surface);
+    --card-foreground: var(--ink);
+    --popover: var(--surface);
+    --popover-foreground: var(--ink);
+    --primary: var(--accent);
+    --primary-foreground: #ffffff;
+    --secondary: var(--bg2);
+    --secondary-foreground: var(--ink);
+    --muted-foreground: var(--muted);
+    --accent-foreground: #ffffff;
+    --destructive: #ef4444;
+    --border: var(--rule);
+    --input: var(--rule);
+    --ring: var(--accent);
+    --chart-1: var(--accent);
+    --chart-2: var(--accent2);
+    --chart-3: #22c55e;
+    --chart-4: #3b82f6;
+    --chart-5: #f59e0b;
+  }
+
+  [data-theme="dark"] {
+    --bg: #1a1b2e;
+    --bg2: #252638;
+    --surface: #2a2c42;
+    --ink: #f0f0ec;
+    --muted: #9ca3af;
+    --rule: #3f4155;
+    --accent: #f0934a;
+    --accent2: #34e2cc;
+    
+    --background: var(--bg);
+    --foreground: var(--ink);
+    --card: var(--surface);
+    --card-foreground: var(--ink);
+    --popover: var(--surface);
+    --popover-foreground: var(--ink);
+    --primary: var(--accent);
+    --primary-foreground: #1a1b2e;
+    --secondary: var(--bg2);
+    --secondary-foreground: var(--ink);
+    --muted-foreground: var(--muted);
+    --accent-foreground: #1a1b2e;
+    --destructive: #f87171;
+    --border: var(--rule);
+    --input: var(--rule);
+    --ring: var(--accent);
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-bg text-ink font-sans antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-sans font-semibold tracking-tight;
+  }
+
+  code {
+    @apply font-mono text-sm;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center px-6 py-3 rounded-lg bg-accent text-white font-medium transition-colors hover:bg-accent/90;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center px-6 py-3 rounded-lg bg-surface text-ink font-medium border border-rule transition-colors hover:bg-bg2;
+  }
+
+  .card {
+    @apply bg-surface rounded-xl border border-rule p-6 transition-all;
+  }
+
+  .section-container {
+    @apply max-w-6xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .section-title {
+    @apply text-3xl font-bold text-ink mb-4;
+  }
+
+  .section-subtitle {
+    @apply text-lg text-muted mb-12;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
