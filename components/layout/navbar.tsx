@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, User } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import Link from 'next/link';
 import { ThemeToggle } from '@/components/shared/theme-toggle';
 import { cn } from '@/lib/utils';
@@ -43,7 +43,7 @@ export function Navbar() {
         <div className="flex items-center justify-between h-16">
           <Link href="/" className="flex items-center gap-2 group">
             <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center text-white font-bold text-lg transition-transform group-hover:scale-105">
-              <User size={20} />
+              TQ
             </div>
             <span className="font-semibold text-lg text-ink">涂奎</span>
           </Link>

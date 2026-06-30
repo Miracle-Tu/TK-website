@@ -17,11 +17,9 @@ interface ProjectsPageClientProps {
 const filterOptions = [
   { id: 'all', label: '全部' },
   { id: 'ai-gov', label: 'AI+政务' },
-  { id: 'pmo', label: 'PMO体系建设' },
   { id: 'data-governance', label: '数据治理' },
-  { id: 'fintech', label: '金融创新' },
+  { id: 'fintech', label: '金融科技' },
   { id: 'scale', label: '规模化交付' },
-  { id: 'integration', label: '总集管理' },
 ];
 
 const industryLabelMap: Record<string, string> = {
@@ -29,8 +27,6 @@ const industryLabelMap: Record<string, string> = {
   'fintech': '金融科技',
   'data-governance': '数据治理',
   'scale': '规模化交付',
-  'integration': '总集管理',
-  'pmo': 'PMO体系',
 };
 
 function getIndustryLabel(industry: string): string {
@@ -39,9 +35,6 @@ function getIndustryLabel(industry: string): string {
 
 function matchesFilter(project: ProjectFrontmatter, filterId: string): boolean {
   if (filterId === 'all') return true;
-  if (filterId === 'pmo') {
-    return project.tags.some(tag => tag.includes('PMO')) || project.role.includes('PMO');
-  }
   return project.industry === filterId;
 }
 

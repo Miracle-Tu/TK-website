@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Mail, Phone, MapPin, Briefcase, Send, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { Mail, Phone, MapPin, Briefcase, Send, CheckCircle, AlertCircle, Loader2, Linkedin } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -347,6 +347,29 @@ export default function ContactPageClient() {
                   <p className="text-sm text-muted">
                     通常在1-2个工作日内回复邮件。如遇紧急事项，请在邮件标题注明【紧急】。
                   </p>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                >
+                  <h3 className="text-base font-semibold mb-4 text-ink">社交链接</h3>
+                  <div className="flex gap-4">
+                    <a
+                      href="https://linkedin.com/in/tukui"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-12 h-12 rounded-xl bg-surface border border-rule flex items-center justify-center text-muted hover:text-accent hover:border-accent/30 transition-all"
+                      aria-label="LinkedIn"
+                    >
+                      <Linkedin size={20} />
+                    </a>
+                    <div className="w-12 h-12 rounded-xl bg-surface border border-rule flex items-center justify-center text-muted">
+                      <span className="text-xs font-bold">微信</span>
+                    </div>
+                  </div>
                 </motion.div>
               </motion.div>
             </ScrollReveal>

@@ -121,7 +121,7 @@ const toolCategories = [
       { name: 'Excel/Google Sheets', desc: '数据处理' },
       { name: 'Tableau/Power BI', desc: '数据可视化' },
       { name: 'SQL', desc: '数据查询' },
-      { name: '飞书多维表格', desc: '轻量协作' },
+      { name: 'Python', desc: '脚本处理' },
     ],
   },
   {
@@ -130,7 +130,16 @@ const toolCategories = [
       { name: '飞书', desc: '办公协作' },
       { name: '钉钉', desc: '组织沟通' },
       { name: '企业微信', desc: '客户对接' },
-      { name: 'Zoom/腾讯会议', desc: '远程会议' },
+      { name: 'Zoom', desc: '远程会议' },
+    ],
+  },
+  {
+    title: '文档与设计',
+    tools: [
+      { name: 'Markdown', desc: '技术文档' },
+      { name: 'Figma', desc: 'UI设计' },
+      { name: 'XMind', desc: '思维导图' },
+      { name: 'Mermaid', desc: '图表绘制' },
     ],
   },
 ];
@@ -380,7 +389,7 @@ export default function AboutPageClient() {
           <ScrollReveal>
             <h2 className="text-3xl font-bold text-center mb-12 text-ink">常用工具</h2>
           </ScrollReveal>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {toolCategories.map((category, catIndex) => (
               <ScrollReveal key={category.title} delay={catIndex * 0.1}>
                 <div>

@@ -71,20 +71,26 @@ export default function HomePageClient({ featuredProjects, latestPosts }: HomePa
               7年项目管理经验，PMP & NPDP 双认证持有者。从测试技术主管起步，经历了字节跳动的AI数据项目管理、瀚华金融的PMO体系建设，到如今中国电信的千万级政企项目交付。横跨互联网、金融、政务、医疗、制造五大行业，让我沉淀出了一套可迁移的项目管理方法论。我相信项目管理的本质不是赶进度，而是在时间、成本、质量的三重约束下做最优决策。
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Link
                 href="/projects"
                 className="inline-flex items-center justify-center px-6 py-3 rounded-lg bg-accent text-white font-medium transition-all hover:bg-accent/90 hover:-translate-y-0.5"
               >
-                查看项目集
+                查看项目案例
                 <ArrowRight size={18} className="ml-2" />
               </Link>
               <Link
-                href="/contact"
+                href="/methodology"
                 className="inline-flex items-center justify-center px-6 py-3 rounded-lg bg-white/10 border border-white/20 text-white font-medium transition-all hover:bg-white/20 hover:-translate-y-0.5"
               >
-                联系我
-                <Mail size={18} className="ml-2" />
+                管理方法论
+              </Link>
+              <Link
+                href="/about"
+                className="inline-flex items-center gap-1 text-white font-medium transition-all hover:gap-2"
+              >
+                了解更多
+                <ArrowRight size={16} />
               </Link>
             </div>
           </motion.div>

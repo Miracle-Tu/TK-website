@@ -1,10 +1,9 @@
-import { Github, Linkedin, Mail, MapPin } from 'lucide-react';
+import { Linkedin, Mail, MapPin } from 'lucide-react';
 import Link from 'next/link';
 
 const socialLinks = [
-  { href: 'https://github.com/tukui', icon: Github, label: 'GitHub' },
   { href: 'https://linkedin.com/in/tukui', icon: Linkedin, label: 'LinkedIn' },
-  { href: 'mailto:tu.kui@example.com', icon: Mail, label: '邮箱' },
+  { href: 'mailto:1634099882@qq.com', icon: Mail, label: '邮箱' },
 ];
 
 export function Footer() {
@@ -42,11 +41,11 @@ export function Footer() {
             <ul className="space-y-3">
               <li className="flex items-center gap-3 text-sm text-muted">
                 <Mail size={16} />
-                <span>tu.kui@example.com</span>
+                <span>1634099882@qq.com</span>
               </li>
               <li className="flex items-center gap-3 text-sm text-muted">
                 <MapPin size={16} />
-                <span>湖北省武汉市</span>
+                <span>重庆</span>
               </li>
               <li className="flex items-center gap-3 pt-2">
                 {socialLinks.map((social) => (
